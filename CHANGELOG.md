@@ -7,6 +7,13 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-04-29
+
+### Fixed
+- Validation error `argument must not be null` when `direction = null` in `secgroup_rules`
+- Root cause: `contains()` inside `||` is fully evaluated by Terraform even when left side is `true`
+- Fix: replaced `v.direction == null || contains(...)` with ternary `v.direction == null ? true : contains(...)`
+
 ## [1.1.0] - 2026-04-29
 
 ### Changed

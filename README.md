@@ -15,7 +15,7 @@ Terraform module to create a **Security Group** with multiple rules on [VNG Clou
 
 ```hcl
 module "sg_web" {
-  source = "github.com/0xphuong/terraform-vngcloud-security-group?ref=v1.0.0"
+  source = "github.com/0xphuong/terraform-vngcloud-security-group?ref=v1.1.0"
 
   project_id = var.project_id
   name       = "web"
@@ -24,17 +24,44 @@ module "sg_web" {
     allow-http = {
       port_range_min   = 80
       port_range_max   = 80
-      remote_ip_prefix = "0.0.0.0/0"
+      remote_ip_prefix = ["0.0.0.0/0"]
     }
     allow-https = {
       port_range_min   = 443
       port_range_max   = 443
-      remote_ip_prefix = "0.0.0.0/0"
+      remote_ip_prefix = ["0.0.0.0/0"]
     }
     allow-ssh-office = {
       port_range_min   = 234
       port_range_max   = 234
-      remote_ip_prefix = "203.0.113.10/32"
+      remote_ip_prefix = ["203.0.113.10/32"]
+    }
+  }
+}
+```
+
+### Multiple CIDRs per rule
+
+```hcl
+module "sg_app" {
+  source = "github.com/0xphuong/terraform-vngcloud-security-group?ref=v1.1.0"
+
+  project_id        = var.project_id
+  name              = "app"
+  default_direction = "ingress"
+
+  secgroup_rules = {
+    # One rule listed → one secgrouprule created
+    allow-http = {
+      port_range_min   = 80
+      port_range_max   = 80
+      remote_ip_prefix = ["0.0.0.0/0"]
+    }
+    # Three CIDRs listed → three secgrouprules created automatically
+    allow-ssh = {
+      port_range_min   = 234
+      port_range_max   = 234
+      remote_ip_prefix = ["10.0.0.0/8", "192.168.1.0/24", "203.0.113.5/32"]
     }
   }
 }
@@ -44,7 +71,7 @@ module "sg_web" {
 
 ```hcl
 module "sg_bastion" {
-  source = "github.com/0xphuong/terraform-vngcloud-security-group?ref=v1.0.0"
+  source = "github.com/0xphuong/terraform-vngcloud-security-group?ref=v1.1.0"
 
   project_id       = var.project_id
   name             = "bastion"
@@ -54,19 +81,19 @@ module "sg_bastion" {
     allow-ssh = {
       port_range_min   = 234
       port_range_max   = 234
-      remote_ip_prefix = "203.0.113.10/32"
+      remote_ip_prefix = ["203.0.113.10/32", "10.0.0.0/8"]
       # inherits default_protocol = "TCP"
     }
     allow-icmp = {
       port_range_min   = 0
       port_range_max   = 0
-      remote_ip_prefix = "0.0.0.0/0"
+      remote_ip_prefix = ["0.0.0.0/0"]
       protocol         = "ICMP"   # overrides default
     }
     allow-all-internal = {
       port_range_min   = 1
       port_range_max   = 65535
-      remote_ip_prefix = "10.0.0.0/16"
+      remote_ip_prefix = ["10.0.0.0/16"]
       protocol         = "any"    # overrides default
     }
   }
@@ -107,14 +134,16 @@ module "sg_bastion" {
 
 ### `secgroup_rules` map value
 
-| Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| `port_range_min` | `number` | — | Start port (0–65535) |
-| `port_range_max` | `number` | — | End port (>= min, <= 65535) |
-| `remote_ip_prefix` | `string` | — | CIDR to allow (e.g. `10.0.0.0/16`) |
-| `direction` | `string` | `null` | Override direction for this rule |
-| `ethertype` | `string` | `null` | Override ethertype for this rule |
-| `protocol` | `string` | `null` | Override protocol for this rule |
+| Field | Type | Default | Required | Description |
+|-------|------|---------|----------|-------------|
+| `port_range_min` | `number` | — | **yes** | Start port (0–65535) |
+| `port_range_max` | `number` | — | **yes** | End port (>= min, <= 65535) |
+| `remote_ip_prefix` | `list(string)` | — | **yes** | One or more CIDRs. One rule is created per CIDR. |
+| `direction` | `string` | `null` | no | Override direction for this rule (`ingress` \| `egress`) |
+| `ethertype` | `string` | `null` | no | Override ethertype for this rule (`IPv4` \| `IPv6`) |
+| `protocol` | `string` | `null` | no | Override protocol for this rule (`TCP` \| `UDP` \| `ICMP` \| `any`) |
+
+> `direction`, `ethertype`, `protocol` default to `null` — module uses `default_direction`, `default_ethertype`, `default_protocol` via `coalesce()`.
 
 ## Outputs
 
