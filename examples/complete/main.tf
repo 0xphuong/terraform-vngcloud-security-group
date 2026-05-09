@@ -1,6 +1,6 @@
 # App tier — only allows traffic from load balancer SG
 module "sg_app" {
-  source = "github.com/0xphuong/terraform-vngcloud-security-group?ref=v1.0.0"
+  source = "github.com/0xphuong/terraform-vngcloud-security-group?ref=v1.1.0"
 
   project_id        = var.project_id
   name              = "app"
@@ -12,19 +12,20 @@ module "sg_app" {
     allow-app-port = {
       port_range_min   = 8080
       port_range_max   = 8080
-      remote_ip_prefix = var.internal_cidr
+      remote_ip_prefix = [var.internal_cidr]
     }
+    # Multiple CIDRs: creates one rule per CIDR automatically
     allow-ssh-bastion = {
       port_range_min   = 234
       port_range_max   = 234
-      remote_ip_prefix = var.bastion_ip
+      remote_ip_prefix = [var.bastion_ip, var.vpn_cidr]
     }
   }
 }
 
 # Database tier — only allows traffic from app tier
 module "sg_db" {
-  source = "github.com/0xphuong/terraform-vngcloud-security-group?ref=v1.0.0"
+  source = "github.com/0xphuong/terraform-vngcloud-security-group?ref=v1.1.0"
 
   project_id = var.project_id
   name       = "database"
@@ -33,24 +34,25 @@ module "sg_db" {
     allow-mysql = {
       port_range_min   = 3306
       port_range_max   = 3306
-      remote_ip_prefix = var.app_subnet_cidr
+      remote_ip_prefix = [var.app_subnet_cidr]
     }
     allow-mongodb = {
       port_range_min   = 27017
       port_range_max   = 27017
-      remote_ip_prefix = var.app_subnet_cidr
+      remote_ip_prefix = [var.app_subnet_cidr]
     }
+    # SSH from multiple admin sources
     allow-ssh-bastion = {
       port_range_min   = 234
       port_range_max   = 234
-      remote_ip_prefix = var.bastion_ip
+      remote_ip_prefix = [var.bastion_ip, var.vpn_cidr, var.office_cidr]
     }
   }
 }
 
-# Bastion — SSH from admin IPs only
+# Bastion — SSH from multiple admin IPs
 module "sg_bastion" {
-  source = "github.com/0xphuong/terraform-vngcloud-security-group?ref=v1.0.0"
+  source = "github.com/0xphuong/terraform-vngcloud-security-group?ref=v1.1.0"
 
   project_id = var.project_id
   name       = "bastion"
@@ -59,12 +61,12 @@ module "sg_bastion" {
     allow-devops = {
       port_range_min   = 234
       port_range_max   = 234
-      remote_ip_prefix = var.devops_ip
+      remote_ip_prefix = [var.devops_ip, var.vpn_cidr, var.office_cidr]
     }
     allow-all-icmp = {
       port_range_min   = 0
       port_range_max   = 0
-      remote_ip_prefix = "0.0.0.0/0"
+      remote_ip_prefix = ["0.0.0.0/0"]
       protocol         = "ICMP"
     }
   }

@@ -47,11 +47,11 @@ variable "default_protocol" {
 }
 
 variable "secgroup_rules" {
-  description = "Map of security group rules. Key is used as the rule description."
+  description = "Map of security group rules. Key is used as the rule description. remote_ip_prefix accepts one or more CIDRs — one rule is created per CIDR."
   type = map(object({
     port_range_min   = number
     port_range_max   = number
-    remote_ip_prefix = string
+    remote_ip_prefix = list(string)
     direction        = optional(string, null)
     ethertype        = optional(string, null)
     protocol         = optional(string, null)
@@ -71,5 +71,11 @@ variable "secgroup_rules" {
       v.direction == null || contains(["ingress", "egress"], v.direction)
     ])
     error_message = "Rule direction must be 'ingress', 'egress', or null (uses default)."
+  }
+  validation {
+    condition = alltrue([
+      for k, v in var.secgroup_rules : length(v.remote_ip_prefix) > 0
+    ])
+    error_message = "remote_ip_prefix must contain at least one CIDR."
   }
 }

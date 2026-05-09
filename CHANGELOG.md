@@ -7,6 +7,30 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-04-29
+
+### Changed
+- `remote_ip_prefix` type: `string` → `list(string)` — **breaking change**, wrap existing values in `[]`
+- `main.tf`: added `locals.expanded_rules` — one rule per CIDR, key format `"<rule_name>|<cidr>"`
+
+### Added
+- Validation: `remote_ip_prefix` must contain at least one CIDR
+- Support for multiple CIDRs per rule without duplicating rule blocks
+
+### Migration from v1.0.0
+
+```hcl
+# Before
+allow-ssh = {
+  remote_ip_prefix = "10.0.0.0/8"
+}
+
+# After
+allow-ssh = {
+  remote_ip_prefix = ["10.0.0.0/8"]
+}
+```
+
 ## [1.0.0] - 2026-04-26
 
 ### Added
