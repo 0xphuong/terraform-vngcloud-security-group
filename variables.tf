@@ -68,7 +68,7 @@ variable "secgroup_rules" {
   validation {
     condition = alltrue([
       for k, v in var.secgroup_rules :
-      v.direction == null || contains(["ingress", "egress"], v.direction)
+      v.direction == null ? true : contains(["ingress", "egress"], v.direction)
     ])
     error_message = "Rule direction must be 'ingress', 'egress', or null (uses default)."
   }
